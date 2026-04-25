@@ -1,22 +1,32 @@
 const BATCH_SIZE = parseInt(process.env.QUEUE_BATCH_SIZE, 10) || 1000;
 
 class CampaignService {
-  constructor({ campaignRepository, leadRepository, outreachQueue, dispatcherQueue, logger, prisma }) {
+  constructor({ campaignRepository, leadRepository, outreachQueue, dispatcherQueue, logger, prisma, auditService }) {
     this.campaignRepository = campaignRepository;
     this.leadRepository = leadRepository;
     this.outreachQueue = outreachQueue;
     this.dispatcherQueue = dispatcherQueue;
     this.logger = logger;
     this.prisma = prisma;
+    this.auditService = auditService;
   }
 
   async createCampaign(data) {
-    return this.campaignRepository.create({
+    const campaign = await this.campaignRepository.create({
       name: data.name,
       industry: data.industry,
       messageTemplate: data.messageTemplate,
       status: 'DRAFT',
     });
+
+    await this.auditService.log({
+      action: 'CAMPAIGN_CREATE',
+      entity: 'Campaign',
+      entityId: campaign.id,
+      metadata: { name: campaign.name },
+    });
+
+    return campaign;
   }
 
   async getCampaign(id) {
@@ -66,6 +76,12 @@ class CampaignService {
 
     await this.campaignRepository.update(campaignId, { status: 'RUNNING' });
 
+    await this.auditService.log({
+      action: 'CAMPAIGN_START',
+      entity: 'Campaign',
+      entityId: campaignId,
+    });
+
     await this.dispatcherQueue.add(
       'dispatch',
       { campaignId },
@@ -81,11 +97,21 @@ class CampaignService {
 
   async pauseCampaign(campaignId) {
     await this.campaignRepository.update(campaignId, { status: 'PAUSED' });
+    await this.auditService.log({
+      action: 'CAMPAIGN_PAUSE',
+      entity: 'Campaign',
+      entityId: campaignId,
+    });
     return { message: 'Campaign paused', campaignId };
   }
 
   async cancelCampaign(campaignId) {
     await this.campaignRepository.update(campaignId, { status: 'CANCELLED' });
+    await this.auditService.log({
+      action: 'CAMPAIGN_CANCEL',
+      entity: 'Campaign',
+      entityId: campaignId,
+    });
     return { message: 'Campaign cancelled', campaignId };
   }
 

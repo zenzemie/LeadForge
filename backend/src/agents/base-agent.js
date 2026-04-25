@@ -1,15 +1,15 @@
 const { v4: uuidv4 } = require('uuid');
 
 class BaseAgent {
-    constructor(type, natsClient) {
+    constructor(type, natsClient, logger) {
         this.id = `${type}-${uuidv4()}`;
         this.type = type;
         this.nats = natsClient;
+        this.logger = logger;
     }
 
     async start() {
-        console.log(`Starting agent: ${this.id}`);
-        // natsClient should already be initialized by NexusSwarm or Container
+        this.logger.info({ agentId: this.id }, `Starting agent: ${this.id}`);
         this.startHeartbeat();
         await this.setupSubscriptions();
     }
@@ -24,7 +24,7 @@ class BaseAgent {
                     status: 'UP'
                 });
             } catch (err) {
-                console.error(`Heartbeat failed for ${this.id}: ${err.message}`);
+                this.logger.error({ err, agentId: this.id }, `Heartbeat failed for ${this.id}`);
             }
         }, 5000);
     }

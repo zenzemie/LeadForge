@@ -1,8 +1,8 @@
 const BaseAgent = require('./base-agent');
 
 class GuardianAgent extends BaseAgent {
-    constructor(natsClient) {
-        super('guardian', natsClient);
+    constructor(natsClient, logger) {
+        super('guardian', natsClient, logger);
         this.activeAgents = new Map();
     }
 
@@ -23,7 +23,7 @@ class GuardianAgent extends BaseAgent {
         const now = new Date();
         for (const [id, info] of this.activeAgents.entries()) {
             if (now - info.lastSeen > 15000) {
-                console.error(`Guardian ${this.id} detected failure in agent: ${id}`);
+                this.logger.error({ agentId: this.id, deadAgentId: id }, `Guardian detected failure in agent`);
                 this.handleFailure(id, info);
                 this.activeAgents.delete(id);
             }
@@ -31,7 +31,7 @@ class GuardianAgent extends BaseAgent {
     }
 
     handleFailure(id, info) {
-        console.log(`Triggering recovery for ${info.type} agent ${id}...`);
+        this.logger.info({ agentId: this.id, deadAgentId: id, deadAgentType: info.type }, `Triggering recovery`);
         // In a real environment, this would call Kubernetes API or Docker API to restart containers
         this.nats.publish('nexus.system.recovery', {
             targetAgentId: id,

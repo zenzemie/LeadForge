@@ -1,12 +1,13 @@
 const OpenAI = require('openai');
 
 class PromptMutator {
-    constructor() {
+    constructor({ logger }) {
         this.openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+        this.logger = logger;
     }
 
     async mutate(basePrompt, performanceData) {
-        console.log('Mutating prompt based on performance data...');
+        this.logger.info('Mutating prompt based on performance data...');
         
         const response = await this.openai.chat.completions.create({
             model: 'gpt-4o',
@@ -26,4 +27,4 @@ class PromptMutator {
     }
 }
 
-module.exports = new PromptMutator();
+module.exports = PromptMutator;

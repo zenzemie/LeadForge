@@ -11,6 +11,9 @@ const swaggerSpec = require('./src/config/swagger');
 const config = require('./src/config');
 const container = require('./src/config/container');
 const errorMiddleware = require('./src/api/middlewares/errorMiddleware');
+const loggingMiddleware = require('./src/api/middlewares/loggingMiddleware');
+const rateLimiter = require('./src/api/middlewares/rateLimiter');
+const { inject } = require('awilix-express');
 
 if (config.sentryDsn) {
   Sentry.init({ dsn: config.sentryDsn });
@@ -21,10 +24,14 @@ const app = express();
 // Security
 app.use(helmet());
 app.use(cors());
+app.use(rateLimiter);
 app.use(express.json({ limit: '50mb' }));
 
 // DI Container
 app.use(scopePerRequest(container));
+
+// Logging
+app.use(inject(loggingMiddleware));
 
 // Swagger Documentation
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
