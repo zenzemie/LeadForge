@@ -17,7 +17,8 @@ A semi-automated AI marketing assistant to find businesses, generate personalize
         ```bash
         cp .env.example .env
         ```
-    *   Fill in your Supabase, Resend, and OpenAI API keys.
+    *   Fill in your Supabase, Resend, OpenAI, and Google Places API keys.
+    *   **Google Places API Key**: Obtain this from the [Google Cloud Console](https://console.cloud.google.com/). Enable the "Places API" and create an API Key.
 4.  Set up the database:
     *   Go to your Supabase project's SQL Editor.
     *   Copy and run the contents of `server/schema.sql`.

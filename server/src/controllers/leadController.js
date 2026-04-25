@@ -1,4 +1,5 @@
 const supabase = require('../config/supabase');
+const { searchPlaces, getPlaceDetails, findEmailFromWebsite, calculateScore } = require('../services/discoveryService');
 
 const getAllLeads = async (req, res) => {
   try {
@@ -74,10 +75,68 @@ const deleteLead = async (req, res) => {
   }
 };
 
+const discoverLeads = async (req, res) => {
+  const { category, location } = req.body;
+
+  if (!category || !location) {
+    return res.status(400).json({ error: 'Category and location are required' });
+  }
+
+  try {
+    const query = `${category} in ${location}`;
+    const places = await searchPlaces(query);
+    
+    const discoveredLeads = [];
+
+    // Process top 5 places to avoid long timeouts and high cost during initial phase
+    for (const place of places.slice(0, 5)) {
+      const details = await getPlaceDetails(place.place_id);
+      
+      let email = null;
+      if (details.website) {
+        email = await findEmailFromWebsite(details.website);
+      }
+
+      const score = calculateScore(details) + (email ? 15 : 0);
+
+      const leadData = {
+        name: details.name,
+        website: details.website || null,
+        phone: details.formatted_phone_number || null,
+        industry: category,
+        email: email,
+        score: score,
+        status: 'not_contacted',
+        notes: `Discovered via Google Places. Rating: ${details.rating || 'N/A'}`
+      };
+
+      // Upsert into Supabase (by name for now, though not ideal)
+      const { data, error } = await supabase
+        .from('leads')
+        .insert([leadData])
+        .select();
+
+      if (!error && data) {
+        discoveredLeads.push(data[0]);
+      }
+    }
+
+    res.status(200).json({
+      message: `Discovery complete. Found and processed ${discoveredLeads.length} leads.`,
+      leads: discoveredLeads
+    });
+
+  } catch (error) {
+    console.error('Error in discoverLeads:', error);
+    res.status(500).json({ error: error.message });
+  }
+};
+
 module.exports = {
   getAllLeads,
   createLead,
   getLeadById,
   updateLead,
   deleteLead,
+  discoverLeads,
 };
