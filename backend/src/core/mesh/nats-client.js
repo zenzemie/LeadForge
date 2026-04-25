@@ -1,21 +1,22 @@
 const { connect, JSONCodec } = require('nats');
 
 class NatsClient {
-    constructor() {
+    constructor({ logger, config }) {
         this.nc = null;
         this.js = null;
         this.jc = JSONCodec();
+        this.logger = logger || console;
+        this.natsUrl = config?.natsUrl || process.env.NATS_URL || 'nats://localhost:4222';
     }
 
     async init() {
-        const natsUrl = process.env.NATS_URL || 'nats://localhost:4222';
         try {
-            this.nc = await connect({ servers: natsUrl });
+            this.nc = await connect({ servers: this.natsUrl });
             this.js = this.nc.jetstream();
-            console.log(`Connected to NATS at ${natsUrl}`);
+            this.logger.info(`Connected to NATS at ${this.natsUrl}`);
             await this.setupStreams();
         } catch (err) {
-            console.error(`Error connecting to NATS: ${err.message}`);
+            this.logger.error(`Error connecting to NATS: ${err.message}`);
             throw err;
         }
     }
@@ -32,11 +33,10 @@ class NatsClient {
         for (const stream of streams) {
             try {
                 await jsm.streams.add({ name: stream.name, subjects: stream.subjects });
-                console.log(`Stream ${stream.name} created/verified`);
+                this.logger.info(`Stream ${stream.name} created/verified`);
             } catch (err) {
-                // If stream already exists, it might throw an error or we can check
                 if (!err.message.includes('stream name already in use')) {
-                    console.error(`Error creating stream ${stream.name}: ${err.message}`);
+                    this.logger.error(`Error creating stream ${stream.name}: ${err.message}`);
                 }
             }
         }
@@ -56,7 +56,7 @@ class NatsClient {
                     const data = this.jc.decode(m.data);
                     await callback(data, m);
                 } catch (err) {
-                    console.error(`Error processing message on ${subject}: ${err.message}`);
+                    this.logger.error(`Error processing message on ${subject}: ${err.message}`);
                     m.nak();
                 }
             }
@@ -65,4 +65,4 @@ class NatsClient {
     }
 }
 
-module.exports = new NatsClient();
+module.exports = NatsClient;

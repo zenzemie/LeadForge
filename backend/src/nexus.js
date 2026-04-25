@@ -5,22 +5,27 @@ const AnalystAgent = require('./agents/analyst-agent');
 const GuardianAgent = require('./agents/guardian-agent');
 
 class NexusSwarm {
-    constructor() {
-        this.scout = new ScoutAgent();
-        this.strategist = new StrategistAgent();
-        this.execution = new ExecutionAgent();
-        this.analyst = new AnalystAgent();
-        this.guardian = new GuardianAgent();
+    constructor({ natsClient, logger, polygonalRouter, pinotClient }) {
+        this.natsClient = natsClient;
+        this.logger = logger;
+        this.polygonalRouter = polygonalRouter;
+        this.pinotClient = pinotClient;
+        this.scout = new ScoutAgent(this.natsClient);
+        this.strategist = new StrategistAgent(this.natsClient, this.polygonalRouter, this.pinotClient);
+        this.execution = new ExecutionAgent(this.natsClient);
+        this.analyst = new AnalystAgent(this.natsClient, this.polygonalRouter);
+        this.guardian = new GuardianAgent(this.natsClient);
     }
 
     async init() {
-        console.log('Initializing Singularity Outreach Nexus Swarm...');
+        this.logger.info('Initializing Singularity Outreach Nexus Swarm...');
+        await this.natsClient.init();
         await this.guardian.start();
         await this.analyst.start();
         await this.execution.start();
         await this.strategist.start();
         await this.scout.start();
-        console.log('Nexus Swarm is fully operational.');
+        this.logger.info('Nexus Swarm is fully operational.');
     }
 
     async triggerScout(data) {
@@ -28,4 +33,4 @@ class NexusSwarm {
     }
 }
 
-module.exports = new NexusSwarm();
+module.exports = NexusSwarm;

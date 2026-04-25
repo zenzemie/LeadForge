@@ -13,17 +13,12 @@ class PolygonalRouter {
     }
 
     async selectStrategy(contextVector) {
-        // In a more advanced version, the bandit could be contextual (Contextual Bandits)
-        // using the contextVector to parameterize the selection.
-        // For this architecture, we'll use the Thompson Sampling on the pool.
-        
         const strategyId = this.bandit.select();
         return this.strategies.find(s => s.id === strategyId);
     }
 
     recordFeedback(strategyId, reward) {
         this.bandit.update(strategyId, reward);
-        console.log(`Updated bandit for ${strategyId} with reward ${reward}`);
     }
 
     getMetrics() {
@@ -34,4 +29,4 @@ class PolygonalRouter {
     }
 }
 
-module.exports = new PolygonalRouter();
+module.exports = PolygonalRouter;

@@ -1,8 +1,7 @@
-const natsClient = require('../core/mesh/nats-client');
 const { v4: uuidv4 } = require('uuid');
 
 class BaseAgent {
-    constructor(type) {
+    constructor(type, natsClient) {
         this.id = `${type}-${uuidv4()}`;
         this.type = type;
         this.nats = natsClient;
@@ -10,7 +9,7 @@ class BaseAgent {
 
     async start() {
         console.log(`Starting agent: ${this.id}`);
-        await this.nats.init();
+        // natsClient should already be initialized by NexusSwarm or Container
         this.startHeartbeat();
         await this.setupSubscriptions();
     }

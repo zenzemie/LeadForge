@@ -1,8 +1,8 @@
 const BaseAgent = require('./base-agent');
 
 class GuardianAgent extends BaseAgent {
-    constructor() {
-        super('guardian');
+    constructor(natsClient) {
+        super('guardian', natsClient);
         this.activeAgents = new Map();
     }
 

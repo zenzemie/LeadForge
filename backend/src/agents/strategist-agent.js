@@ -1,10 +1,10 @@
 const BaseAgent = require('./base-agent');
-const pinotClient = require('../core/analytics/pinot-client');
-const polygonalRouter = require('../core/router/polygonal-router');
 
 class StrategistAgent extends BaseAgent {
-    constructor() {
-        super('strategist');
+    constructor(natsClient, polygonalRouter, pinotClient) {
+        super('strategist', natsClient);
+        this.polygonalRouter = polygonalRouter;
+        this.pinotClient = pinotClient;
     }
 
     async setupSubscriptions() {
@@ -19,10 +19,10 @@ class StrategistAgent extends BaseAgent {
         console.log(`Strategist ${this.id} planning for event: ${eventData.id || 'unknown'}`);
 
         // 1. Query Pinot for similar past events
-        const similarEvents = await pinotClient.findSimilar(eventData.context_vector);
+        const similarEvents = await this.pinotClient.findSimilar(eventData.context_vector);
         
         // 2. Consult Polygonal Router for optimal model/strategy
-        const strategy = await polygonalRouter.selectStrategy(eventData.context_vector);
+        const strategy = await this.polygonalRouter.selectStrategy(eventData.context_vector);
 
         // 3. Create execution task
         const task = {

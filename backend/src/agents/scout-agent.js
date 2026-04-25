@@ -2,14 +2,13 @@ const BaseAgent = require('./base-agent');
 const OpenAI = require('openai');
 
 class ScoutAgent extends BaseAgent {
-    constructor() {
-        super('scout');
+    constructor(natsClient) {
+        super('scout', natsClient);
         this.openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
     }
 
     async setupSubscriptions() {
         // Scout might listen to external webhooks or social streams.
-        // For this demo, we'll simulate an ingestion endpoint.
     }
 
     async processIngestedData(rawData) {

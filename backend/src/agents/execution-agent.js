@@ -2,8 +2,8 @@ const BaseAgent = require('./base-agent');
 const OpenAI = require('openai');
 
 class ExecutionAgent extends BaseAgent {
-    constructor() {
-        super('execution');
+    constructor(natsClient) {
+        super('execution', natsClient);
         this.openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
     }
 

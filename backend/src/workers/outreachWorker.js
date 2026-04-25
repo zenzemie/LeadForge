@@ -1,8 +1,11 @@
 const { Worker } = require('bullmq');
 const { redis } = require('../lib/redis');
-const { outreachQueue, OUTREACH_QUEUE_NAME } = require('../queues/outreachQueue');
-const outreachService = require('../services/outreachService');
+const { OUTREACH_QUEUE_NAME } = require('../queues/outreachQueue');
+const container = require('../config/container');
 const rateLimiter = require('../lib/rateLimiter');
+
+const outreachService = container.resolve('outreachService');
+const logger = container.resolve('logger');
 
 const CONCURRENCY = parseInt(process.env.QUEUE_CONCURRENCY, 10) || 5;
 
@@ -34,27 +37,27 @@ const outreachWorker = new Worker(
 );
 
 outreachWorker.on('completed', (job, result) => {
-  console.log(`Job ${job.id} completed for lead ${job.data.leadId}:`, result.status);
+  logger.info(`Job ${job.id} completed for lead ${job.data.leadId}: ${result.status}`);
 });
 
 outreachWorker.on('failed', (job, err) => {
-  console.error(`Job ${job?.id} failed:`, err.message);
+  logger.error({ err, jobId: job?.id }, `Job failed: ${err.message}`);
 });
 
 outreachWorker.on('error', (err) => {
-  console.error('Outreach worker error:', err);
+  logger.error({ err }, 'Outreach worker error');
 });
 
 process.on('SIGINT', () => {
   outreachWorker.close().then(() => {
-    console.log('Outreach worker closed');
+    logger.info('Outreach worker closed');
     process.exit(0);
   });
 });
 
 process.on('SIGTERM', () => {
   outreachWorker.close().then(() => {
-    console.log('Outreach worker closed');
+    logger.info('Outreach worker closed');
     process.exit(0);
   });
 });

@@ -1,13 +1,16 @@
 const { Worker } = require('bullmq');
 const { redis } = require('../lib/redis');
-const { dispatcherQueue, DISPATCHER_QUEUE_NAME } = require('../queues/outreachQueue');
-const campaignService = require('../services/campaignService');
+const { DISPATCHER_QUEUE_NAME } = require('../queues/outreachQueue');
+const container = require('../config/container');
+
+const campaignService = container.resolve('campaignService');
+const logger = container.resolve('logger');
 
 const dispatcherWorker = new Worker(
   DISPATCHER_QUEUE_NAME,
   async (job) => {
     const { campaignId } = job.data;
-    console.log(`Starting dispatch for campaign ${campaignId}`);
+    logger.info(`Starting dispatch for campaign ${campaignId}`);
 
     return campaignService.dispatchLeadsInBatches(campaignId);
   },
@@ -20,27 +23,27 @@ const dispatcherWorker = new Worker(
 );
 
 dispatcherWorker.on('completed', (job, result) => {
-  console.log(`Dispatcher job ${job.id} completed:`, result.message);
+  logger.info(`Dispatcher job ${job.id} completed: ${result.message}`);
 });
 
 dispatcherWorker.on('failed', (job, err) => {
-  console.error(`Dispatcher job ${job?.id} failed:`, err.message);
+  logger.error({ err, jobId: job?.id }, `Dispatcher job failed: ${err.message}`);
 });
 
 dispatcherWorker.on('error', (err) => {
-  console.error('Dispatcher worker error:', err);
+  logger.error({ err }, 'Dispatcher worker error');
 });
 
 process.on('SIGINT', () => {
   dispatcherWorker.close().then(() => {
-    console.log('Dispatcher worker closed');
+    logger.info('Dispatcher worker closed');
     process.exit(0);
   });
 });
 
 process.on('SIGTERM', () => {
   dispatcherWorker.close().then(() => {
-    console.log('Dispatcher worker closed');
+    logger.info('Dispatcher worker closed');
     process.exit(0);
   });
 });

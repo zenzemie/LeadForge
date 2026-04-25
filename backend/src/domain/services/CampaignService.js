@@ -1,22 +1,26 @@
-const prisma = require('../lib/prisma');
-const { outreachQueue, dispatcherQueue } = require('../queues/outreachQueue');
-
 const BATCH_SIZE = parseInt(process.env.QUEUE_BATCH_SIZE, 10) || 1000;
 
 class CampaignService {
+  constructor({ campaignRepository, leadRepository, outreachQueue, dispatcherQueue, logger, prisma }) {
+    this.campaignRepository = campaignRepository;
+    this.leadRepository = leadRepository;
+    this.outreachQueue = outreachQueue;
+    this.dispatcherQueue = dispatcherQueue;
+    this.logger = logger;
+    this.prisma = prisma;
+  }
+
   async createCampaign(data) {
-    return prisma.campaign.create({
-      data: {
-        name: data.name,
-        industry: data.industry,
-        messageTemplate: data.messageTemplate,
-        status: 'DRAFT',
-      },
+    return this.campaignRepository.create({
+      name: data.name,
+      industry: data.industry,
+      messageTemplate: data.messageTemplate,
+      status: 'DRAFT',
     });
   }
 
   async getCampaign(id) {
-    return prisma.campaign.findUnique({
+    return this.prisma.campaign.findUnique({
       where: { id },
       include: { leads: { take: 10, orderBy: { createdAt: 'desc' } } },
     });
@@ -24,7 +28,7 @@ class CampaignService {
 
   async listCampaigns(options = {}) {
     const { skip = 0, take = 20, status } = options;
-    return prisma.campaign.findMany({
+    return this.campaignRepository.findAll({
       skip,
       take,
       where: status ? { status } : undefined,
@@ -41,7 +45,7 @@ class CampaignService {
       status: 'PENDING',
     }));
 
-    const result = await prisma.lead.createMany({
+    const result = await this.prisma.lead.createMany({
       data: leadData,
       skipDuplicates: true,
     });
@@ -50,9 +54,7 @@ class CampaignService {
   }
 
   async startCampaign(campaignId) {
-    const campaign = await prisma.campaign.findUnique({
-      where: { id: campaignId },
-    });
+    const campaign = await this.campaignRepository.findById(campaignId);
 
     if (!campaign) {
       throw new Error('Campaign not found');
@@ -62,12 +64,9 @@ class CampaignService {
       throw new Error('Campaign cannot be started from current status');
     }
 
-    await prisma.campaign.update({
-      where: { id: campaignId },
-      data: { status: 'RUNNING' },
-    });
+    await this.campaignRepository.update(campaignId, { status: 'RUNNING' });
 
-    await dispatcherQueue.add(
+    await this.dispatcherQueue.add(
       'dispatch',
       { campaignId },
       {
@@ -81,20 +80,12 @@ class CampaignService {
   }
 
   async pauseCampaign(campaignId) {
-    await prisma.campaign.update({
-      where: { id: campaignId },
-      data: { status: 'PAUSED' },
-    });
-
+    await this.campaignRepository.update(campaignId, { status: 'PAUSED' });
     return { message: 'Campaign paused', campaignId };
   }
 
   async cancelCampaign(campaignId) {
-    await prisma.campaign.update({
-      where: { id: campaignId },
-      data: { status: 'CANCELLED' },
-    });
-
+    await this.campaignRepository.update(campaignId, { status: 'CANCELLED' });
     return { message: 'Campaign cancelled', campaignId };
   }
 
@@ -103,16 +94,14 @@ class CampaignService {
     let hasMore = true;
 
     while (hasMore) {
-      const campaign = await prisma.campaign.findUnique({
-        where: { id: campaignId },
-      });
+      const campaign = await this.campaignRepository.findById(campaignId);
 
       if (campaign.status === 'CANCELLED') {
-        console.log(`Campaign ${campaignId} cancelled, stopping dispatch`);
+        this.logger.info(`Campaign ${campaignId} cancelled, stopping dispatch`);
         break;
       }
 
-      const leads = await prisma.lead.findMany({
+      const leads = await this.leadRepository.findAll({
         where: { campaignId, status: 'PENDING' },
         take: BATCH_SIZE,
         orderBy: { createdAt: 'asc' },
@@ -133,23 +122,20 @@ class CampaignService {
         },
       }));
 
-      await outreachQueue.addBulk(jobs);
+      await this.outreachQueue.addBulk(jobs);
       processed += leads.length;
 
-      console.log(`Dispatched batch of ${leads.length} leads for campaign ${campaignId}`);
+      this.logger.info(`Dispatched batch of ${leads.length} leads for campaign ${campaignId}`);
 
       if (leads.length < BATCH_SIZE) {
         hasMore = false;
       }
     }
 
-    await prisma.campaign.update({
-      where: { id: campaignId },
-      data: { status: 'COMPLETED' },
-    });
+    await this.campaignRepository.update(campaignId, { status: 'COMPLETED' });
 
     return { message: 'Dispatch completed', processed };
   }
 }
 
-module.exports = new CampaignService();
+module.exports = CampaignService;

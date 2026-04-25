@@ -1,9 +1,9 @@
 const BaseAgent = require('./base-agent');
-const polygonalRouter = require('../core/router/polygonal-router');
 
 class AnalystAgent extends BaseAgent {
-    constructor() {
-        super('analyst');
+    constructor(natsClient, polygonalRouter) {
+        super('analyst', natsClient);
+        this.polygonalRouter = polygonalRouter;
     }
 
     async setupSubscriptions() {
@@ -22,13 +22,13 @@ class AnalystAgent extends BaseAgent {
         const reward = this.calculateReward(signal);
 
         // Update the Polygonal Router (Collective Intelligence)
-        polygonalRouter.recordFeedback(signal.strategyId, reward);
+        this.polygonalRouter.recordFeedback(signal.strategyId, reward);
 
         // Publish updated performance metrics to the system stream
         await this.nats.publish('nexus.system.metrics_update', {
             strategyId: signal.strategyId,
             newReward: reward,
-            metrics: polygonalRouter.getMetrics()
+            metrics: this.polygonalRouter.getMetrics()
         });
     }
 

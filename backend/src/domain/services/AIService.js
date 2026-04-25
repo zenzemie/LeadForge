@@ -1,4 +1,6 @@
 class AIService {
+  constructor() {}
+
   generateMessage(name, industry, customTemplate) {
     if (customTemplate) {
       return customTemplate
@@ -15,4 +17,4 @@ class AIService {
   }
 }
 
-module.exports = new AIService();
+module.exports = AIService;
