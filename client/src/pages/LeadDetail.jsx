@@ -2,11 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { getLead, updateLead } from '../api/leads';
 import axios from 'axios';
-import { ChevronLeft, Send, Sparkles, Globe, Phone, Mail, Clock } from 'lucide-react';
+import { ChevronLeft, Send, Sparkles, Globe, Phone, Mail, Clock, Database } from 'lucide-react';
+import { useSettings } from '../context/SettingsContext';
 
 const LeadDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { mockMode } = useSettings();
   const [lead, setLead] = useState(null);
   const [loading, setLoading] = useState(true);
   const [tone, setTone] = useState('friendly');
@@ -17,14 +19,44 @@ const LeadDetail = () => {
 
   useEffect(() => {
     fetchLead();
-  }, [id]);
+  }, [id, mockMode]);
 
   const fetchLead = async () => {
+    setLoading(true);
+    if (mockMode && id.startsWith('mock-')) {
+      setLead({
+        id,
+        name: id === 'mock-1' ? 'Example Business 1' : 'Example Business',
+        website: 'https://example.com',
+        email: 'contact@example.com',
+        phone: '+44 20 1234 5678',
+        score: 85,
+        status: 'not_contacted',
+        industry: 'salon',
+        created_at: new Date().toISOString(),
+        notes: 'Great potential for WhatsApp automation to handle bookings.'
+      });
+      setLoading(false);
+      return;
+    }
+
     try {
       const response = await getLead(id);
       setLead(response.data);
     } catch (error) {
       console.error('Error fetching lead details:', error);
+      if (mockMode) {
+        setLead({
+          id,
+          name: 'Demo Lead (API Failed)',
+          website: 'https://demo.com',
+          email: 'demo@demo.com',
+          score: 50,
+          status: 'not_contacted',
+          industry: 'general',
+          created_at: new Date().toISOString()
+        });
+      }
     } finally {
       setLoading(false);
     }
@@ -32,6 +64,17 @@ const LeadDetail = () => {
 
   const handleGenerate = async () => {
     setGenerating(true);
+    if (mockMode) {
+      setTimeout(() => {
+        setGeneratedMessage({
+          subject: `Automating ${lead.name}'s customer replies`,
+          body: `Hi ${lead.name} team,\n\nI noticed your business and think our ${serviceFocus} could really help you save time. Would you be interested in a quick chat?\n\nBest,\nLeadForge`
+        });
+        setGenerating(false);
+      }, 1000);
+      return;
+    }
+
     try {
       const response = await axios.post('http://localhost:5000/api/outreach/generate', {
         leadId: id,
@@ -52,6 +95,15 @@ const LeadDetail = () => {
 
   const handleSend = async () => {
     setSending(true);
+    if (mockMode) {
+      setTimeout(() => {
+        alert('MOCK: Email sent successfully!');
+        setLead({ ...lead, status: 'sent' });
+        setSending(false);
+      }, 1000);
+      return;
+    }
+
     try {
       await axios.post('http://localhost:5000/api/outreach/send', {
         leadId: id,
@@ -73,6 +125,14 @@ const LeadDetail = () => {
 
   return (
     <div className="max-w-5xl mx-auto space-y-6 pb-12">
+      {mockMode && (
+        <div className="bg-orange-600 text-white px-6 py-3 rounded-xl shadow-lg flex items-center justify-between">
+          <div className="flex items-center">
+            <Database className="w-5 h-5 mr-3" />
+            <span className="font-bold">MOCK DATA MODE ACTIVE</span>
+          </div>
+        </div>
+      )}
       <button 
         onClick={() => navigate('/leads')}
         className="flex items-center text-gray-500 hover:text-gray-700 transition-colors"

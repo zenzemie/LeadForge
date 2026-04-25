@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 import { Search, MapPin, Loader2, CheckCircle, ExternalLink } from 'lucide-react';
+import { useSettings } from '../context/SettingsContext';
 
 const Discovery = () => {
+  const { mockMode } = useSettings();
   const [category, setCategory] = useState('');
   const [location, setLocation] = useState('');
   const [loading, setLoading] = useState(false);
@@ -16,6 +18,20 @@ const Discovery = () => {
     setLoading(true);
     setError('');
     setResults([]);
+
+    if (mockMode) {
+      // Mock data for demo purposes
+      setTimeout(() => {
+        const mockResults = [
+          { id: 'mock-1', name: 'Example Business 1', website: 'https://example.com', score: 85, phone: '+44 20 1234 5678', email: true },
+          { id: 'mock-2', name: 'Example Business 2', website: 'https://example.org', score: 72, phone: '+44 20 8765 4321', email: false },
+          { id: 'mock-3', name: 'Example Business 3', website: 'https://example.net', score: 94, phone: '+44 20 5555 6666', email: true },
+        ];
+        setResults(mockResults);
+        setLoading(false);
+      }, 1500);
+      return;
+    }
     
     try {
       const response = await axios.post('http://localhost:5000/api/leads/discover', {
@@ -30,6 +46,20 @@ const Discovery = () => {
       setLoading(false);
     }
   };
+
+  const industries = [
+    { value: 'restaurant', label: 'Restaurants & Cafes' },
+    { value: 'salon', label: 'Hair & Beauty Salons' },
+    { value: 'clinic', label: 'Medical & Dental Clinics' },
+    { value: 'hotel', label: 'Boutique Hotels' },
+    { value: 'gym', label: 'Gyms & Fitness' },
+    { value: 'accountant', label: 'Accounting Services' },
+    { value: 'lawyer', label: 'Legal Services' },
+    { value: 'plumber', label: 'Plumbing Services' },
+    { value: 'electrician', label: 'Electrical Services' },
+    { value: 'physiotherapist', label: 'Physiotherapy Clinics' },
+    { value: 'chiropractor', label: 'Chiropractic Clinics' },
+  ];
 
   return (
     <div className="space-y-8">
@@ -51,11 +81,9 @@ const Discovery = () => {
                 required
               >
                 <option value="">Select industry...</option>
-                <option value="restaurant">Restaurants & Cafes</option>
-                <option value="salon">Hair & Beauty Salons</option>
-                <option value="clinic">Medical & Dental Clinics</option>
-                <option value="hotel">Boutique Hotels</option>
-                <option value="gym">Gyms & Fitness</option>
+                {industries.map(ind => (
+                  <option key={ind.value} value={ind.value}>{ind.label}</option>
+                ))}
               </select>
             </div>
           </div>
@@ -85,6 +113,12 @@ const Discovery = () => {
         </form>
       </div>
 
+      {mockMode && (
+        <div className="p-4 bg-orange-50 text-orange-700 rounded-lg border border-orange-100 max-w-4xl text-sm font-medium">
+          Note: Currently in Mock Data Mode. Results are generated locally for testing the UI.
+        </div>
+      )}
+
       {error && (
         <div className="p-4 bg-red-50 text-red-600 rounded-lg border border-red-100 max-w-4xl">
           {error}
@@ -95,7 +129,9 @@ const Discovery = () => {
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden max-w-4xl">
           <div className="p-6 border-b border-gray-50 flex items-center justify-between">
             <h2 className="font-bold text-gray-800">Results ({results.length})</h2>
-            <span className="text-xs text-green-600 font-bold bg-green-50 px-2 py-1 rounded">Auto-saved to Leads</span>
+            <span className="text-xs text-green-600 font-bold bg-green-50 px-2 py-1 rounded">
+              {mockMode ? 'Mock results' : 'Auto-saved to Leads'}
+            </span>
           </div>
           <div className="divide-y divide-gray-50">
             {results.map((lead) => (

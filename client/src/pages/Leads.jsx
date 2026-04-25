@@ -1,9 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getLeads } from '../api/leads';
-import { Filter, Search as SearchIcon, ArrowRight, Star } from 'lucide-react';
+import { Filter, Search as SearchIcon, ArrowRight, Star, Database } from 'lucide-react';
+import { useSettings } from '../context/SettingsContext';
 
 const Leads = () => {
+  const { mockMode } = useSettings();
   const [leads, setLeads] = useState([]);
   const [filteredLeads, setFilteredLeads] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -13,12 +15,14 @@ const Leads = () => {
 
   useEffect(() => {
     fetchLeads();
-  }, []);
+  }, [mockMode]);
 
   useEffect(() => {
     const filtered = leads.filter(lead => {
-      const matchesSearch = lead.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                            lead.industry.toLowerCase().includes(searchQuery.toLowerCase());
+      const name = lead.name || '';
+      const industry = lead.industry || '';
+      const matchesSearch = name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                            industry.toLowerCase().includes(searchQuery.toLowerCase());
       const matchesStatus = statusFilter === 'all' || lead.status === statusFilter;
       return matchesSearch && matchesStatus;
     });
@@ -26,6 +30,20 @@ const Leads = () => {
   }, [searchQuery, statusFilter, leads]);
 
   const fetchLeads = async () => {
+    setLoading(true);
+    if (mockMode) {
+      const mockLeads = [
+        { id: '1', name: 'Example Salon', industry: 'salon', score: 88, status: 'sent', created_at: new Date().toISOString() },
+        { id: '2', name: 'Tech Clinic', industry: 'clinic', score: 75, status: 'replied', created_at: new Date().toISOString() },
+        { id: '3', name: 'Good Eats', industry: 'restaurant', score: 92, status: 'converted', created_at: new Date().toISOString() },
+        { id: '4', name: 'Elite Gym', industry: 'gym', score: 65, status: 'not_contacted', created_at: new Date().toISOString() },
+        { id: '5', name: 'City Hotel', industry: 'hotel', score: 80, status: 'sent', created_at: new Date().toISOString() },
+      ];
+      setLeads(mockLeads);
+      setLoading(false);
+      return;
+    }
+
     try {
       const response = await getLeads();
       setLeads(response.data);
@@ -38,6 +56,14 @@ const Leads = () => {
 
   return (
     <div className="space-y-6">
+      {mockMode && (
+        <div className="bg-orange-600 text-white px-6 py-3 rounded-xl shadow-lg flex items-center justify-between">
+          <div className="flex items-center">
+            <Database className="w-5 h-5 mr-3" />
+            <span className="font-bold">MOCK DATA MODE ACTIVE</span>
+          </div>
+        </div>
+      )}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold text-gray-800">Lead Management</h1>

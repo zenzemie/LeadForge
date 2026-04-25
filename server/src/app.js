@@ -3,14 +3,17 @@ const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
 const routes = require('./routes');
+const { apiLimiter } = require('./middleware/rateLimitMiddleware');
+const logger = require('./services/logger');
 
 const app = express();
 
 // Middleware
 app.use(helmet());
 app.use(cors());
-app.use(morgan('dev'));
+app.use(morgan('combined', { stream: { write: message => logger.info(message.trim()) } }));
 app.use(express.json());
+app.use('/api', apiLimiter);
 
 // Routes
 app.use('/api', routes);
@@ -22,7 +25,7 @@ app.get('/health', (req, res) => {
 
 // Error handling
 app.use((err, req, res, next) => {
-  console.error(err.stack);
+  logger.error(err.stack);
   res.status(500).json({ error: 'Something went wrong!' });
 });
 

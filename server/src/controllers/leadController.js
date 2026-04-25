@@ -99,6 +99,18 @@ const discoverLeads = async (req, res) => {
 
       const score = calculateScore(details) + (email ? 15 : 0);
 
+      // Check for duplicates before inserting
+      const { data: existingLeads } = await supabase
+        .from('leads')
+        .select('id')
+        .or(`website.eq.${details.website || 'null'},name.eq.${details.name}`)
+        .limit(1);
+
+      if (existingLeads && existingLeads.length > 0) {
+        console.log(`Lead already exists: ${details.name}`);
+        continue;
+      }
+
       const leadData = {
         name: details.name,
         website: details.website || null,
@@ -110,7 +122,6 @@ const discoverLeads = async (req, res) => {
         notes: `Discovered via Google Places. Rating: ${details.rating || 'N/A'}`
       };
 
-      // Upsert into Supabase (by name for now, though not ideal)
       const { data, error } = await supabase
         .from('leads')
         .insert([leadData])

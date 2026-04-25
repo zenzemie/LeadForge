@@ -49,9 +49,23 @@ A semi-automated AI marketing assistant to find businesses, generate personalize
 
 ## API Routes
 
+### Leads
 - `GET /health` - Health check
 - `GET /api/leads` - Get all leads
 - `POST /api/leads` - Create a lead
 - `GET /api/leads/:id` - Get a lead by ID
 - `PATCH /api/leads/:id` - Update a lead
 - `DELETE /api/leads/:id` - Delete a lead
+- `POST /api/leads/discover` - Discover leads using Google Places
+
+### Outreach
+- `POST /api/outreach/generate` - Generate personalized AI message
+- `POST /api/outreach/send` - Send email via Resend API
+
+## 80/20 Workflow
+
+1.  **Discovery**: Use the "Discovery" tab to find businesses in a specific category and location.
+2.  **Qualification**: Review the "Leads" tab. Leads are automatically scored based on their public data.
+3.  **Personalization**: Open a lead's detail page. Choose a service focus and tone.
+4.  **Review**: AI generates a message. Edit it if necessary to ensure 100% quality.
+5.  **Send**: Click "Send Email" to deliver the message via Resend.

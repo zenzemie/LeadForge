@@ -1,0 +1,28 @@
+import React, { createContext, useContext, useState, useEffect } from 'react';
+
+const SettingsContext = createContext();
+
+export const SettingsProvider = ({ children }) => {
+  const [mockMode, setMockMode] = useState(() => {
+    const saved = localStorage.getItem('mockMode');
+    return saved ? JSON.parse(saved) : false;
+  });
+
+  useEffect(() => {
+    localStorage.setItem('mockMode', JSON.stringify(mockMode));
+  }, [mockMode]);
+
+  return (
+    <SettingsContext.Provider value={{ mockMode, setMockMode }}>
+      {children}
+    </SettingsContext.Provider>
+  );
+};
+
+export const useSettings = () => {
+  const context = useContext(SettingsContext);
+  if (!context) {
+    throw new Error('useSettings must be used within a SettingsProvider');
+  }
+  return context;
+};

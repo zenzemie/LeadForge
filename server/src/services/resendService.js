@@ -1,25 +1,30 @@
 const { Resend } = require('resend');
+const logger = require('./logger');
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
-const sendEmail = async (to, subject, html) => {
-  try {
-    const { data, error } = await resend.emails.send({
-      from: 'LeadForge <onboarding@resend.dev>', // Use verified domain in production
-      to: [to],
-      subject: subject,
-      html: html,
-    });
+const sendEmail = async (to, subject, html, retries = 3) => {
+  for (let i = 0; i < retries; i++) {
+    try {
+      const { data, error } = await resend.emails.send({
+        from: 'LeadForge <onboarding@resend.dev>', // Use verified domain in production
+        to: [to],
+        subject: subject,
+        html: html,
+      });
 
-    if (error) {
-      console.error('Resend API Error:', error);
-      throw new Error(error.message);
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      logger.info(`Email sent successfully to ${to}`, { messageId: data.id });
+      return data;
+    } catch (error) {
+      logger.error(`Attempt ${i + 1} failed sending email to ${to}: ${error.message}`);
+      if (i === retries - 1) throw new Error(`Failed after ${retries} attempts: ${error.message}`);
+      // Wait before retry
+      await new Promise(resolve => setTimeout(resolve, 2000 * (i + 1)));
     }
-
-    return data;
-  } catch (error) {
-    console.error('Error sending email with Resend:', error);
-    throw new Error('Failed to send email');
   }
 };
 

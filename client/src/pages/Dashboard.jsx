@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { getLeads } from '../api/leads';
-import { Users, Mail, Reply, CheckCircle, Activity } from 'lucide-react';
+import { Users, Mail, Reply, CheckCircle, Activity, Database } from 'lucide-react';
+import { useSettings } from '../context/SettingsContext';
 
 const Dashboard = () => {
+  const { mockMode } = useSettings();
   const [stats, setStats] = useState({
     totalLeads: 0,
     emailsSent: 0,
@@ -10,12 +12,32 @@ const Dashboard = () => {
     converted: 0
   });
   const [recentLeads, setRecentLeads] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetchData();
-  }, []);
+  }, [mockMode]);
 
   const fetchData = async () => {
+    setLoading(true);
+    if (mockMode) {
+      setStats({
+        totalLeads: 45,
+        emailsSent: 32,
+        replies: 12,
+        converted: 3
+      });
+      setRecentLeads([
+        { id: '1', name: 'Example Salon', industry: 'salon', score: 88, status: 'sent', created_at: new Date().toISOString() },
+        { id: '2', name: 'Tech Clinic', industry: 'clinic', score: 75, status: 'replied', created_at: new Date().toISOString() },
+        { id: '3', name: 'Good Eats', industry: 'restaurant', score: 92, status: 'converted', created_at: new Date().toISOString() },
+        { id: '4', name: 'Elite Gym', industry: 'gym', score: 65, status: 'not_contacted', created_at: new Date().toISOString() },
+        { id: '5', name: 'City Hotel', industry: 'hotel', score: 80, status: 'sent', created_at: new Date().toISOString() },
+      ]);
+      setLoading(false);
+      return;
+    }
+
     try {
       const response = await getLeads();
       const leads = response.data;
@@ -30,6 +52,8 @@ const Dashboard = () => {
       setRecentLeads(leads.slice(0, 5));
     } catch (error) {
       console.error('Error fetching dashboard stats:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -45,8 +69,25 @@ const Dashboard = () => {
     </div>
   );
 
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-8">
+      {mockMode && (
+        <div className="bg-orange-600 text-white px-6 py-3 rounded-xl shadow-lg flex items-center justify-between">
+          <div className="flex items-center">
+            <Database className="w-5 h-5 mr-3" />
+            <span className="font-bold">MOCK DATA MODE ACTIVE</span>
+          </div>
+          <span className="text-xs bg-white/20 px-2 py-1 rounded">Using local examples</span>
+        </div>
+      )}
       <div className="flex justify-between items-end">
         <div>
           <h1 className="text-3xl font-bold text-gray-800">Overview</h1>
