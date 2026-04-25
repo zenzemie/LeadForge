@@ -99,9 +99,15 @@ export class LangGraphService {
       })
       .addNode('memory', async (state) => {
         return withSpan('agent.memory', async (span) => {
-            this.logger.log('Memory node extracting entities...');
+            this.logger.log('Memory node extracting entities and recording outcome...');
             if (state.result) {
                 await this.knowledgeService.extractAndStoreEntities(state.result);
+                
+                // Record outcome based on reviewer feedback
+                const isSuccessful = !state.needsRevision;
+                if (state.strategy) {
+                  await this.knowledgeService.recordOutcome(state.data, state.strategy, isSuccessful);
+                }
             }
             return {};
         });

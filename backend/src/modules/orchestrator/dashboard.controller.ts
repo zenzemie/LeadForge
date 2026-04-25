@@ -2,6 +2,7 @@ import { Controller, Get } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { LangGraphService } from './langgraph.service';
 import { EvolutionService } from '../evolution/evolution.service';
+import { RoutingService } from './routing.service';
 
 @ApiTags('Dashboard')
 @Controller('dashboard')
@@ -9,6 +10,7 @@ export class DashboardController {
   constructor(
     private readonly langGraphService: LangGraphService,
     private readonly evolutionService: EvolutionService,
+    private readonly routingService: RoutingService,
   ) {}
 
   @Get('graph/topology')
@@ -20,7 +22,10 @@ export class DashboardController {
   @Get('evolution/stats')
   @ApiOperation({ summary: 'Get Meta-Optimizer evolution stats' })
   async getEvolutionStats() {
-    return this.evolutionService.getEvolutionStats();
+    return {
+        evolution: await this.evolutionService.getEvolutionStats(),
+        bandit: this.routingService.getStats()
+    };
   }
 
   @Get('graph/traces')

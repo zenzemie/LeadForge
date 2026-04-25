@@ -71,4 +71,32 @@ export class KnowledgeService {
       graph,
     };
   }
+
+  async recordOutcome(context: any, strategy: any, success: boolean) {
+    this.logger.log(`Recording outcome for strategy ${strategy.id}: ${success ? 'SUCCESS' : 'FAILURE'}`);
+    return this.addKnowledge(
+        `strategy:${strategy.id}`,
+        'has_outcome',
+        success ? 'success' : 'failure',
+        { 
+            context,
+            strategyId: strategy.id,
+            timestamp: new Date().toISOString()
+        }
+    );
+  }
+
+  async findSimilarSuccesses(context: any) {
+    this.logger.log(`Finding similar past successes for context: ${JSON.stringify(context)}`);
+    // This would normally use vector search on the metadata of 'has_outcome' relations
+    // For now, return recent successful strategies
+    return this.prisma.knowledgeGraph.findMany({
+        where: {
+            relation: 'has_outcome',
+            target: 'success'
+        },
+        take: 3,
+        orderBy: { createdAt: 'desc' }
+    });
+  }
 }
