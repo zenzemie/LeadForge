@@ -10,11 +10,12 @@ class NexusSwarm {
         this.logger = logger;
         this.polygonalRouter = polygonalRouter;
         this.pinotClient = pinotClient;
-        this.scout = new ScoutAgent(this.natsClient);
-        this.strategist = new StrategistAgent(this.natsClient, this.polygonalRouter, this.pinotClient);
-        this.execution = new ExecutionAgent(this.natsClient);
-        this.analyst = new AnalystAgent(this.natsClient, this.polygonalRouter);
-        this.guardian = new GuardianAgent(this.natsClient);
+        
+        this.scout = new ScoutAgent(this.natsClient, this.logger);
+        this.strategist = new StrategistAgent(this.natsClient, this.logger, this.polygonalRouter, this.pinotClient);
+        this.execution = new ExecutionAgent(this.natsClient, this.logger);
+        this.analyst = new AnalystAgent(this.natsClient, this.logger, this.polygonalRouter);
+        this.guardian = new GuardianAgent(this.natsClient, this.logger);
     }
 
     async init() {

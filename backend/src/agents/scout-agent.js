@@ -2,8 +2,8 @@ const BaseAgent = require('./base-agent');
 const OpenAI = require('openai');
 
 class ScoutAgent extends BaseAgent {
-    constructor(natsClient) {
-        super('scout', natsClient);
+    constructor(natsClient, logger) {
+        super('scout', natsClient, logger);
         this.openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
     }
 
@@ -12,7 +12,7 @@ class ScoutAgent extends BaseAgent {
     }
 
     async processIngestedData(rawData) {
-        console.log(`Scout ${this.id} processing raw data...`);
+        this.logger.info({ agentId: this.id }, `Scout ${this.id} processing raw data...`);
         
         // 1. Vectorize the context
         const contextString = `${rawData.name} ${rawData.industry} ${rawData.title || ''} ${rawData.companyDesc || ''}`;
@@ -26,7 +26,7 @@ class ScoutAgent extends BaseAgent {
         };
 
         await this.logEvent('ingested', event);
-        console.log(`Scout ${this.id} published event to mesh.`);
+        this.logger.info({ agentId: this.id }, `Scout ${this.id} published event to mesh.`);
     }
 
     async getEmbedding(text) {
@@ -38,7 +38,7 @@ class ScoutAgent extends BaseAgent {
             });
             return response.data[0].embedding;
         } catch (err) {
-            console.error(`Embedding failed: ${err.message}`);
+            this.logger.error({ err, agentId: this.id }, `Embedding failed: ${err.message}`);
             // Return dummy vector if OpenAI fails for resilience
             return new Array(1536).fill(0);
         }

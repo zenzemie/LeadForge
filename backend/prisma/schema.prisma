@@ -64,3 +64,13 @@ model OutreachLog {
 
   @@index([leadId])
 }
+
+model AuditLog {
+  id           String   @id @default(uuid())
+  userId       String?
+  action       String
+  resourceType String?
+  resourceId   String?
+  metadata     Json?
+  createdAt    DateTime @default(now())
+}

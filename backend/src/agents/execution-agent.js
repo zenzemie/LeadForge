@@ -2,8 +2,8 @@ const BaseAgent = require('./base-agent');
 const OpenAI = require('openai');
 
 class ExecutionAgent extends BaseAgent {
-    constructor(natsClient) {
-        super('execution', natsClient);
+    constructor(natsClient, logger) {
+        super('execution', natsClient, logger);
         this.openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
     }
 
@@ -15,7 +15,7 @@ class ExecutionAgent extends BaseAgent {
     }
 
     async executeOutreach(task) {
-        console.log(`Execution ${this.id} performing outreach for lead: ${task.lead.name}`);
+        this.logger.info({ agentId: this.id, leadName: task.lead.name }, `Execution ${this.id} performing outreach`);
 
         const { strategy, lead } = task;
 
@@ -24,8 +24,11 @@ class ExecutionAgent extends BaseAgent {
             const content = await this.generateContent(strategy, lead);
 
             // 2. Perform actual outreach (mocked)
-            console.log(`Sending message via ${strategy.model} with template ${strategy.template}:`);
-            console.log(`Content: ${content.substring(0, 50)}...`);
+            this.logger.info({ 
+                agentId: this.id, 
+                model: strategy.model, 
+                template: strategy.template 
+            }, `Sending message`);
 
             // 3. Log success
             await this.logEvent('executed', {
@@ -36,7 +39,7 @@ class ExecutionAgent extends BaseAgent {
             });
 
         } catch (err) {
-            console.error(`Execution failed: ${err.message}`);
+            this.logger.error({ err, agentId: this.id }, `Execution failed`);
             await this.logEvent('failed', {
                 taskId: task.eventId,
                 error: err.message
@@ -45,9 +48,8 @@ class ExecutionAgent extends BaseAgent {
     }
 
     async generateContent(strategy, lead) {
-        // Mocking LLM call based on strategy
         const response = await this.openai.chat.completions.create({
-            model: strategy.model === 'gpt-4o' ? 'gpt-4o' : 'gpt-3.5-turbo', // Fallback for demo
+            model: strategy.model === 'gpt-4o' ? 'gpt-4o' : 'gpt-3.5-turbo',
             messages: [
                 { role: 'system', content: `You are an AI sales expert using the ${strategy.template} strategy.` },
                 { role: 'user', content: `Create a personalized outreach message for ${lead.name} in the ${lead.industry} industry.` }

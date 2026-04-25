@@ -7,6 +7,7 @@ const NexusSwarm = require('../nexus');
 const NatsClient = require('../core/mesh/nats-client');
 const PolygonalRouter = require('../core/router/polygonal-router');
 const PinotClient = require('../core/analytics/pinot-client');
+const PromptMutator = require('../ml/prompt-mutator');
 
 // Repositories
 const LeadRepository = require('../infrastructure/repositories/LeadRepository');
@@ -17,6 +18,7 @@ const OutreachLogRepository = require('../infrastructure/repositories/OutreachLo
 const AIService = require('../domain/services/AIService');
 const OutreachService = require('../domain/services/OutreachService');
 const CampaignService = require('../domain/services/CampaignService');
+const LeadService = require('../domain/services/LeadService');
 const SecurityService = require('../domain/services/SecurityService');
 const MetricsService = require('../infrastructure/monitoring/MetricsService');
 const AuditService = require('../domain/services/AuditService');
@@ -41,6 +43,7 @@ container.register({
   natsClient: asClass(NatsClient).singleton(),
   polygonalRouter: asClass(PolygonalRouter).singleton(),
   pinotClient: asClass(PinotClient).singleton(),
+  promptMutator: asClass(PromptMutator).singleton(),
   
   // Repositories
   leadRepository: asClass(LeadRepository).singleton(),
@@ -51,6 +54,7 @@ container.register({
   aiService: asClass(AIService).singleton(),
   outreachService: asClass(OutreachService).singleton(),
   campaignService: asClass(CampaignService).singleton(),
+  leadService: asClass(LeadService).singleton(),
   securityService: asClass(SecurityService).singleton(),
   metricsService: asClass(MetricsService).singleton(),
   auditService: asClass(AuditService).singleton(),

@@ -1,8 +1,8 @@
 const BaseAgent = require('./base-agent');
 
 class StrategistAgent extends BaseAgent {
-    constructor(natsClient, polygonalRouter, pinotClient) {
-        super('strategist', natsClient);
+    constructor(natsClient, logger, polygonalRouter, pinotClient) {
+        super('strategist', natsClient, logger);
         this.polygonalRouter = polygonalRouter;
         this.pinotClient = pinotClient;
     }
@@ -16,7 +16,7 @@ class StrategistAgent extends BaseAgent {
     }
 
     async planStrategy(eventData) {
-        console.log(`Strategist ${this.id} planning for event: ${eventData.id || 'unknown'}`);
+        this.logger.info({ agentId: this.id, eventId: eventData.id }, `Strategist ${this.id} planning for event`);
 
         // 1. Query Pinot for similar past events
         const similarEvents = await this.pinotClient.findSimilar(eventData.context_vector);
@@ -38,7 +38,7 @@ class StrategistAgent extends BaseAgent {
         };
 
         await this.nats.publish('nexus.tasks.outreach', task);
-        console.log(`Strategist ${this.id} published task with strategy ${strategy.id}`);
+        this.logger.info({ agentId: this.id, strategyId: strategy.id }, `Strategist ${this.id} published task`);
     }
 }
 

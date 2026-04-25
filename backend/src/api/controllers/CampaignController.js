@@ -1,15 +1,44 @@
+/**
+ * @swagger
+ * tags:
+ *   name: Campaigns
+ *   description: Campaign management
+ */
 class CampaignController {
   constructor({ campaignService, outreachService }) {
     this.campaignService = campaignService;
     this.outreachService = outreachService;
   }
 
+  /**
+   * @swagger
+   * /campaigns:
+   *   post:
+   *     summary: Create a new campaign
+   *     tags: [Campaigns]
+   *     security:
+   *       - bearerAuth: []
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             type: object
+   *             required: [name, industry]
+   *             properties:
+   *               name:
+   *                 type: string
+   *               industry:
+   *                 type: string
+   *               messageTemplate:
+   *                 type: string
+   *     responses:
+   *       201:
+   *         description: Campaign created
+   */
   create = async (req, res, next) => {
     try {
       const { name, industry, messageTemplate } = req.body;
-      if (!name || !industry) {
-        return res.status(400).json({ error: 'name and industry are required' });
-      }
       const campaign = await this.campaignService.createCampaign({ name, industry, messageTemplate });
       res.status(201).json(campaign);
     } catch (error) {
@@ -17,6 +46,31 @@ class CampaignController {
     }
   };
 
+  /**
+   * @swagger
+   * /campaigns:
+   *   get:
+   *     summary: List campaigns
+   *     tags: [Campaigns]
+   *     security:
+   *       - bearerAuth: []
+   *     parameters:
+   *       - in: query
+   *         name: skip
+   *         schema:
+   *           type: integer
+   *       - in: query
+   *         name: take
+   *         schema:
+   *           type: integer
+   *       - in: query
+   *         name: status
+   *         schema:
+   *           type: string
+   *     responses:
+   *       200:
+   *         description: List of campaigns
+   */
   list = async (req, res, next) => {
     try {
       const { skip = 0, take = 20, status } = req.query;
@@ -31,6 +85,24 @@ class CampaignController {
     }
   };
 
+  /**
+   * @swagger
+   * /campaigns/{id}:
+   *   get:
+   *     summary: Get campaign details
+   *     tags: [Campaigns]
+   *     security:
+   *       - bearerAuth: []
+   *     parameters:
+   *       - in: path
+   *         name: id
+   *         required: true
+   *         schema:
+   *           type: string
+   *     responses:
+   *       200:
+   *         description: Campaign details
+   */
   get = async (req, res, next) => {
     try {
       const campaign = await this.campaignService.getCampaign(req.params.id);
@@ -43,6 +115,24 @@ class CampaignController {
     }
   };
 
+  /**
+   * @swagger
+   * /campaigns/{id}/start:
+   *   post:
+   *     summary: Start a campaign
+   *     tags: [Campaigns]
+   *     security:
+   *       - bearerAuth: []
+   *     parameters:
+   *       - in: path
+   *         name: id
+   *         required: true
+   *         schema:
+   *           type: string
+   *     responses:
+   *       200:
+   *         description: Campaign started
+   */
   start = async (req, res, next) => {
     try {
       const result = await this.campaignService.startCampaign(req.params.id);
@@ -52,6 +142,24 @@ class CampaignController {
     }
   };
 
+  /**
+   * @swagger
+   * /campaigns/{id}/pause:
+   *   post:
+   *     summary: Pause a campaign
+   *     tags: [Campaigns]
+   *     security:
+   *       - bearerAuth: []
+   *     parameters:
+   *       - in: path
+   *         name: id
+   *         required: true
+   *         schema:
+   *           type: string
+   *     responses:
+   *       200:
+   *         description: Campaign paused
+   */
   pause = async (req, res, next) => {
     try {
       const result = await this.campaignService.pauseCampaign(req.params.id);
@@ -61,6 +169,24 @@ class CampaignController {
     }
   };
 
+  /**
+   * @swagger
+   * /campaigns/{id}/cancel:
+   *   post:
+   *     summary: Cancel a campaign
+   *     tags: [Campaigns]
+   *     security:
+   *       - bearerAuth: []
+   *     parameters:
+   *       - in: path
+   *         name: id
+   *         required: true
+   *         schema:
+   *           type: string
+   *     responses:
+   *       200:
+   *         description: Campaign cancelled
+   */
   cancel = async (req, res, next) => {
     try {
       const result = await this.campaignService.cancelCampaign(req.params.id);
@@ -70,6 +196,24 @@ class CampaignController {
     }
   };
 
+  /**
+   * @swagger
+   * /campaigns/{id}/stats:
+   *   get:
+   *     summary: Get campaign statistics
+   *     tags: [Campaigns]
+   *     security:
+   *       - bearerAuth: []
+   *     parameters:
+   *       - in: path
+   *         name: id
+   *         required: true
+   *         schema:
+   *           type: string
+   *     responses:
+   *       200:
+   *         description: Campaign statistics
+   */
   stats = async (req, res, next) => {
     try {
       const stats = await this.outreachService.getCampaignStats(req.params.id);

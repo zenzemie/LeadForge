@@ -1,14 +1,13 @@
 const BaseAgent = require('./base-agent');
 
 class AnalystAgent extends BaseAgent {
-    constructor(natsClient, polygonalRouter) {
-        super('analyst', natsClient);
+    constructor(natsClient, logger, polygonalRouter) {
+        super('analyst', natsClient, logger);
         this.polygonalRouter = polygonalRouter;
     }
 
     async setupSubscriptions() {
         // In a real system, this would listen for webhooks from email providers (SendGrid, etc.)
-        // or LinkedIn reply notifications.
         // For now, we'll listen to NEXUS_ROI signals (simulated).
         await this.nats.subscribe('nexus.roi.signal', async (data, msg) => {
             await this.processROI(data);
@@ -17,7 +16,7 @@ class AnalystAgent extends BaseAgent {
     }
 
     async processROI(signal) {
-        console.log(`Analyst ${this.id} processing ROI signal for strategy: ${signal.strategyId}`);
+        this.logger.info({ agentId: this.id, strategyId: signal.strategyId }, `Analyst ${this.id} processing ROI signal`);
 
         const reward = this.calculateReward(signal);
 
