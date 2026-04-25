@@ -26,6 +26,26 @@ A semi-automated AI marketing assistant to find businesses, generate personalize
     npm run dev
     ```
 
+## Frontend Setup
+
+1.  Navigate to the `client` directory:
+    ```bash
+    cd client
+    ```
+2.  Install dependencies:
+    ```bash
+    npm install
+    ```
+3.  Set up environment variables:
+    *   Copy `.env.example` to `.env`:
+        ```bash
+        cp .env.example .env
+        ```
+4.  Start the development server:
+    ```bash
+    npm run dev
+    ```
+
 ## API Routes
 
 - `GET /health` - Health check
