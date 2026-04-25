@@ -9,6 +9,7 @@ import { AuthModule } from './modules/auth/auth.module';
 import { KnowledgeModule } from './modules/knowledge/knowledge.module';
 import { AgentModule } from './modules/agent/agent.module';
 import { OrchestratorModule } from './modules/orchestrator/orchestrator.module';
+import { EvolutionModule } from './modules/evolution/evolution.module';
 import { AuditInterceptor } from './common/interceptors/audit.interceptor';
 import { RolesGuard } from './common/guards/roles.guard';
 
@@ -23,6 +24,7 @@ import { RolesGuard } from './common/guards/roles.guard';
     KnowledgeModule,
     AgentModule,
     OrchestratorModule,
+    EvolutionModule,
   ],
   providers: [
     {

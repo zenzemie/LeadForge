@@ -36,6 +36,32 @@ export class KnowledgeService {
     });
   }
 
+  async addKnowledge(entity: string, relation: string, target: string, metadata?: any) {
+    this.logger.log(`Adding knowledge: ${entity} ${relation} ${target}`);
+    return this.prisma.knowledgeGraph.create({
+      data: {
+        entity,
+        relation,
+        target,
+        metadata,
+      },
+    });
+  }
+
+  async extractAndStoreEntities(text: string) {
+    // In a real scenario, we would use an LLM to extract triples.
+    // For this implementation, we'll do a simple mock extraction.
+    this.logger.log(`Extracting entities from text...`);
+    
+    // Mock extraction logic
+    if (text.includes('works at')) {
+        const parts = text.split('works at');
+        const entity = parts[0].trim();
+        const target = parts[1].trim();
+        await this.addKnowledge(entity, 'works_at', target);
+    }
+  }
+
   async getContext(query: string) {
     const hybrid = await this.hybridSearch(query);
     const graph = await this.graphSearch(query);
