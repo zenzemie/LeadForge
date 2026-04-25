@@ -12,9 +12,26 @@ export class RoutingService {
   ];
 
   constructor() {
-    // Porting the ThompsonSampling logic to a more robust implementation if needed
-    // For now, let's assume we can use the existing one or a similar one.
     this.bandit = new ThompsonSampling(this.strategies.map(s => s.id));
+  }
+
+  getStrategies() {
+    return this.strategies;
+  }
+
+  getStats() {
+    return this.bandit.getStats();
+  }
+
+  addStrategy(strategy: any) {
+    this.strategies.push(strategy);
+    // We need a way to add an arm to the bandit
+    // For simplicity, let's just re-initialize with new arms, 
+    // but in a real system we'd preserve existing stats.
+    const oldStats = this.bandit.getStats();
+    this.bandit = new ThompsonSampling(this.strategies.map(s => s.id));
+    // Restore old stats
+    this.bandit.setStats(oldStats);
   }
 
   async selectModel(context: any) {
@@ -29,19 +46,5 @@ export class RoutingService {
     const reward = success ? 1 : 0;
     this.bandit.update(strategyId, reward);
     // Here we could also store cost/latency metrics for more advanced routing
-  }
-
-  getStrategies() {
-    return this.strategies;
-  }
-
-  getPerformanceData() {
-    return this.bandit.getStats();
-  }
-
-  addStrategy(strategy: any) {
-    this.strategies.push(strategy);
-    this.bandit.addArm(strategy.id);
-    this.logger.log(`Added new strategy: ${strategy.id}`);
   }
 }

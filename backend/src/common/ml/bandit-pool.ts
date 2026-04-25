@@ -63,14 +63,15 @@ export class ThompsonSampling {
         }
     }
 
-    addArm(arm: string) {
-        if (!this.stats[arm]) {
-            this.arms.push(arm);
-            this.stats[arm] = { alpha: 1, beta: 1 };
-        }
-    }
-
     getStats() {
         return this.stats;
+    }
+
+    setStats(stats: Record<string, { alpha: number; beta: number }>) {
+        for (const arm in stats) {
+            if (this.stats[arm]) {
+                this.stats[arm] = stats[arm];
+            }
+        }
     }
 }

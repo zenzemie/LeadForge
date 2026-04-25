@@ -20,7 +20,7 @@ export class ExecutionAgent extends BaseAgent {
 
         try {
             const response = await this.openai.chat.completions.create({
-                model: data.strategy.model === 'gpt-4o' ? 'gpt-4o' : 'gpt-4o-mini',
+                model: data.strategy.model === 'gpt-4o' ? 'gpt-4o' : 'gpt-4o-mini', // Mapping to available models
                 messages: [
                     {
                         role: 'system',

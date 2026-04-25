@@ -16,7 +16,7 @@ export class ReviewerAgent extends BaseAgent {
   async processTask(data: any) {
     return this.tracer.startActiveSpan('agent.reviewer.process', async (span) => {
         this.logger.log(`Reviewer ${this.id} analyzing results...`);
-        this.logThought(span, 'Evaluating the quality of the generated outreach message using GPT-4o.');
+        this.logThought(span, 'Evaluating the quality of the generated outreach message.');
 
         if (!data.result) {
             this.logThought(span, 'No result found in data, requesting revision.');
@@ -47,7 +47,7 @@ export class ReviewerAgent extends BaseAgent {
             return { 
                 ...data, 
                 needsRevision: !evaluation.isSuccessful,
-                reviewFeedback: evaluation.feedback
+                evaluationFeedback: evaluation.feedback
             };
         } catch (error) {
             this.logger.error(`Review failed: ${error.message}`);

@@ -48,45 +48,6 @@ export class KnowledgeService {
     });
   }
 
-  async recordOutcome(context: any, strategy: any, success: boolean) {
-    this.logger.log(`Recording outcome for strategy ${strategy?.id}: ${success ? 'SUCCESS' : 'FAILURE'}`);
-    return this.addKnowledge(
-      `strategy:${strategy?.id}`,
-      'had_outcome',
-      success ? 'success' : 'failure',
-      {
-        context,
-        timestamp: new Date().toISOString(),
-      }
-    );
-  }
-
-  async getSuccessfulExamples(limit: number = 5) {
-    return this.prisma.knowledgeGraph.findMany({
-      where: {
-        relation: 'had_outcome',
-        target: 'success',
-      },
-      take: limit,
-      orderBy: { createdAt: 'desc' },
-    });
-  }
-
-  async findSimilarSuccesses(query: string, limit: number = 3) {
-    this.logger.log(`Finding similar successes for: ${query}`);
-    return this.prisma.knowledgeGraph.findMany({
-      where: {
-        relation: 'had_outcome',
-        target: 'success',
-        OR: [
-          { entity: { contains: query, mode: 'insensitive' } },
-          { metadata: { path: ['context', 'industry'], equals: query } }
-        ]
-      },
-      take: limit,
-    });
-  }
-
   async extractAndStoreEntities(text: string) {
     // In a real scenario, we would use an LLM to extract triples.
     // For this implementation, we'll do a simple mock extraction.
@@ -109,5 +70,33 @@ export class KnowledgeService {
       hybrid,
       graph,
     };
+  }
+
+  async recordOutcome(context: any, strategy: any, success: boolean) {
+    this.logger.log(`Recording outcome for strategy ${strategy.id}: ${success ? 'SUCCESS' : 'FAILURE'}`);
+    return this.addKnowledge(
+        `strategy:${strategy.id}`,
+        'has_outcome',
+        success ? 'success' : 'failure',
+        { 
+            context,
+            strategyId: strategy.id,
+            timestamp: new Date().toISOString()
+        }
+    );
+  }
+
+  async findSimilarSuccesses(context: any) {
+    this.logger.log(`Finding similar past successes for context: ${JSON.stringify(context)}`);
+    // This would normally use vector search on the metadata of 'has_outcome' relations
+    // For now, return recent successful strategies
+    return this.prisma.knowledgeGraph.findMany({
+        where: {
+            relation: 'has_outcome',
+            target: 'success'
+        },
+        take: 3,
+        orderBy: { createdAt: 'desc' }
+    });
   }
 }

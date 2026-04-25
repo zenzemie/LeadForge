@@ -19,7 +19,7 @@ export class StrategistAgent extends BaseAgent {
         this.logger.log(`Strategist ${this.id} selecting strategy...`);
         this.logThought(span, 'Analyzing context and searching for similar past successes.');
 
-        const successes = await this.knowledgeService.findSimilarSuccesses(data.industry || '');
+        const successes = await this.knowledgeService.findSimilarSuccesses(data);
         this.logThought(span, `Found ${successes.length} similar past successes.`);
 
         const strategy = await this.routingService.selectModel({ ...data, pastSuccesses: successes });

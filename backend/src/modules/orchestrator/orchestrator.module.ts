@@ -10,8 +10,20 @@ import { EvolutionModule } from '../evolution/evolution.module';
 @Global()
 @Module({
   imports: [forwardRef(() => EvolutionModule)],
-  providers: [OrchestratorService, LangGraphService, RoutingService, SelfHealingService, MetaOptimizerService],
+  providers: [
+    OrchestratorService, 
+    LangGraphService, 
+    RoutingService, 
+    SelfHealingService,
+    MetaOptimizerService,
+  ],
   controllers: [DashboardController],
-  exports: [OrchestratorService, LangGraphService, RoutingService, SelfHealingService, MetaOptimizerService],
+  exports: [
+    OrchestratorService, 
+    LangGraphService, 
+    RoutingService, 
+    SelfHealingService,
+    MetaOptimizerService,
+  ],
 })
 export class OrchestratorModule {}
