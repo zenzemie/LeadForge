@@ -1,12 +1,15 @@
-const prisma = require('../lib/prisma');
-const aiService = require('./aiService');
-
 class OutreachService {
+  constructor({ leadRepository, campaignRepository, outreachLogRepository, aiService, prisma, logger }) {
+    this.leadRepository = leadRepository;
+    this.campaignRepository = campaignRepository;
+    this.outreachLogRepository = outreachLogRepository;
+    this.aiService = aiService;
+    this.prisma = prisma;
+    this.logger = logger;
+  }
+
   async sendOutreach(leadId, campaignId) {
-    const lead = await prisma.lead.findUnique({
-      where: { id: leadId },
-      include: { campaign: true },
-    });
+    const lead = await this.leadRepository.findWithCampaign(leadId);
 
     if (!lead || !lead.campaign) {
       throw new Error('Lead or campaign not found');
@@ -16,22 +19,19 @@ class OutreachService {
       return { status: lead.status, message: 'Already processed' };
     }
 
-    await prisma.lead.update({
-      where: { id: leadId },
-      data: { status: 'PROCESSING' },
-    });
+    await this.leadRepository.updateStatus(leadId, 'PROCESSING');
 
     try {
-      const message = aiService.generatePersonalizedMessage(lead, lead.campaign);
+      const message = this.aiService.generatePersonalizedMessage(lead, lead.campaign);
       
       await this.simulateEmailSend(lead.email, message);
 
-      await prisma.$transaction([
-        prisma.lead.update({
+      await this.prisma.$transaction([
+        this.prisma.lead.update({
           where: { id: leadId },
           data: { status: 'SENT' },
         }),
-        prisma.outreachLog.create({
+        this.prisma.outreachLog.create({
           data: {
             leadId,
             status: 'SENT',
@@ -42,12 +42,13 @@ class OutreachService {
 
       return { status: 'SENT', message };
     } catch (error) {
-      await prisma.$transaction([
-        prisma.lead.update({
+      this.logger.error({ err: error, leadId }, 'Failed to send outreach');
+      await this.prisma.$transaction([
+        this.prisma.lead.update({
           where: { id: leadId },
           data: { status: 'FAILED' },
         }),
-        prisma.outreachLog.create({
+        this.prisma.outreachLog.create({
           data: {
             leadId,
             status: 'FAILED',
@@ -67,12 +68,12 @@ class OutreachService {
 
   async getCampaignStats(campaignId) {
     const [total, pending, processing, sent, failed, bounced] = await Promise.all([
-      prisma.lead.count({ where: { campaignId } }),
-      prisma.lead.count({ where: { campaignId, status: 'PENDING' } }),
-      prisma.lead.count({ where: { campaignId, status: 'PROCESSING' } }),
-      prisma.lead.count({ where: { campaignId, status: 'SENT' } }),
-      prisma.lead.count({ where: { campaignId, status: 'FAILED' } }),
-      prisma.lead.count({ where: { campaignId, status: 'BOUNCED' } }),
+      this.leadRepository.count({ campaignId }),
+      this.leadRepository.count({ campaignId, status: 'PENDING' }),
+      this.leadRepository.count({ campaignId, status: 'PROCESSING' }),
+      this.leadRepository.count({ campaignId, status: 'SENT' }),
+      this.leadRepository.count({ campaignId, status: 'FAILED' }),
+      this.leadRepository.count({ campaignId, status: 'BOUNCED' }),
     ]);
 
     return {
@@ -87,4 +88,4 @@ class OutreachService {
   }
 }
 
-module.exports = new OutreachService();
+module.exports = OutreachService;

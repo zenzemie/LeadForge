@@ -1,39 +1,82 @@
 require('dotenv').config();
-
 const express = require('express');
 const cors = require('cors');
-const nexus = require('./src/nexus');
+const helmet = require('helmet');
+const { scopePerRequest } = require('awilix-express');
+const Sentry = require('@sentry/node');
+
+const swaggerUi = require('swagger-ui-express');
+const swaggerSpec = require('./src/config/swagger');
+
+const config = require('./src/config');
+const container = require('./src/config/container');
+const errorMiddleware = require('./src/api/middlewares/errorMiddleware');
+
+if (config.sentryDsn) {
+  Sentry.init({ dsn: config.sentryDsn });
+}
 
 const app = express();
+
+// Security
+app.use(helmet());
 app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 
-nexus.init().catch(err => console.error('Failed to init Nexus:', err));
+// DI Container
+app.use(scopePerRequest(container));
 
+// Swagger Documentation
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+
+// Initialize Nexus Swarm
+const nexus = container.resolve('nexus');
+nexus.init().catch(err => {
+  const logger = container.resolve('logger');
+  logger.error({ err }, 'Failed to init Nexus');
+});
+
+// Health check
 app.get('/', (req, res) => {
   res.send('Backend is running');
 });
 
-app.use('/ai', require('./src/routes/ai'));
-app.use('/campaigns', require('./src/routes/campaigns'));
-app.use('/leads', require('./src/routes/leads'));
-
-app.use((err, req, res, next) => {
-  console.error('Unhandled error:', err);
-  res.status(500).json({ error: 'Internal server error' });
+// Metrics
+app.get('/metrics', async (req, res) => {
+  const metricsService = container.resolve('metricsService');
+  res.set('Content-Type', metricsService.getContentType());
+  res.end(await metricsService.getMetrics());
 });
 
-const PORT = process.env.PORT || 5000;
+// Routes
+const aiRouter = express.Router();
+require('./src/api/routes/ai')(aiRouter);
+app.use('/ai', aiRouter);
+
+const campaignRouter = express.Router();
+require('./src/api/routes/campaigns')(campaignRouter);
+app.use('/campaigns', campaignRouter);
+
+const leadRouter = express.Router();
+require('./src/api/routes/leads')(leadRouter);
+app.use('/leads', leadRouter);
+
+// Error handling
+app.use(errorMiddleware);
 
 function startServer() {
-  const server = app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
+  const server = app.listen(config.port, () => {
+    const logger = container.resolve('logger');
+    logger.info(`Server running on port ${config.port} [${config.env}]`);
   });
 
   const gracefulShutdown = (signal) => {
-    console.log(`${signal} received, shutting down gracefully`);
-    server.close(() => {
-      console.log('HTTP server closed');
+    const logger = container.resolve('logger');
+    logger.info(`${signal} received, shutting down gracefully`);
+    server.close(async () => {
+      logger.info('HTTP server closed');
+      const prisma = container.resolve('prisma');
+      await prisma.$disconnect();
       process.exit(0);
     });
   };
@@ -42,4 +85,8 @@ function startServer() {
   process.on('SIGINT', () => gracefulShutdown('SIGINT'));
 }
 
-startServer();
+if (require.main === module) {
+  startServer();
+}
+
+module.exports = app;
