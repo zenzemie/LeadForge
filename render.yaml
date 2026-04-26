@@ -16,15 +16,15 @@ services:
       - key: NODE_ENV
         value: production
       - key: SUPABASE_URL
-        sync: false
+        value: https://xxeklkjkhbgmkytmkoqu.supabase.co
       - key: SUPABASE_ANON_KEY
-        sync: false
+        value: sb_publishable_9f2M0sJkuJQmZq4yphSj4A_H2DAaFVW
       - key: OPENAI_API_KEY
-        sync: false
+        value: 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
       - key: RESEND_API_KEY
-        sync: false
+        value: re_HVh89Fnj_pPWiLMX77gN5gq5YwqDhqHA1
       - key: YELP_API_KEY
-        sync: false
+        value: EpRkWXEfkQfNzEF_vTZAsth3lBiWllm9kNeloWZADk5lSME0j3zlSnivLGh2Dr3ex59cDX6divgEXNFcZwmCFgRuDuDlC43wMt4pQ0rss2kY_jDT6-WhmxFM3V3uaXYx
       - key: API_AUTH_KEY
         generateValue: true
 
