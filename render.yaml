@@ -5,8 +5,9 @@ services:
     env: node
     plan: free
     region: oregon
-    buildCommand: cd server && npm install
-    startCommand: cd server && npm start
+    buildCommand: npm install
+    startCommand: npm start
+    rootDir: server
     envVars:
       - key: PORT
         value: 5000
@@ -14,7 +15,7 @@ services:
         value: production
       - key: SUPABASE_URL
         sync: false
-      - key: SUPABASE_KEY
+      - key: SUPABASE_ANON_KEY
         sync: false
       - key: OPENAI_API_KEY
         sync: false
@@ -31,12 +32,9 @@ services:
     env: static
     plan: free
     region: oregon
-    buildCommand: cd client && npm install && npm run build
-    staticPublishDir: client/dist
-    routes:
-      - type: rewrite
-        source: /*
-        destination: /index.html
+    buildCommand: npm install && npm run build
+    staticPublishDir: dist
+    rootDir: client
     envVars:
       - key: VITE_API_URL
         fromService:
@@ -49,3 +47,7 @@ services:
           type: web
           property: envVar
           envVarKey: API_AUTH_KEY
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
