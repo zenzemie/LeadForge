@@ -43,7 +43,7 @@ services:
       - key: NODE_ENV
         value: production
       - key: VITE_API_URL
-        value: https://ai-outreach-api.onrender.com/api
+        value: https://ai-outreach-api-cvzj.onrender.com/api
       - key: VITE_API_AUTH_KEY
         fromService:
           type: web
