@@ -23,7 +23,7 @@ services:
         sync: false
       - key: RESEND_API_KEY
         sync: false
-      - key: GOOGLE_PLACES_API_KEY
+      - key: YELP_API_KEY
         sync: false
       - key: API_AUTH_KEY
         generateValue: true

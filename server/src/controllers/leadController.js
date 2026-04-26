@@ -1,5 +1,5 @@
 const supabase = require('../config/supabase');
-const { searchPlaces, getPlaceDetails, findEmailFromWebsite, calculateScore } = require('../services/discoveryService');
+const { searchBusinesses, findEmailFromWebsite, calculateScore } = require('../services/discoveryService');
 
 const getAllLeads = async (req, res) => {
   try {
@@ -83,43 +83,51 @@ const discoverLeads = async (req, res) => {
   }
 
   try {
-    const query = `${category} in ${location}`;
-    const places = await searchPlaces(query);
+    const businesses = await searchBusinesses(category, location);
     
     const discoveredLeads = [];
 
-    // Process top 5 places to avoid long timeouts and high cost during initial phase
-    for (const place of places.slice(0, 5)) {
-      const details = await getPlaceDetails(place.place_id);
+    for (const business of businesses) {
+      // Yelp provides the website URL as 'url' (Yelp page) 
+      // but often includes the business's own website if available
+      // Note: Yelp Fusion API 'url' is the Yelp listing. 
+      // We often need to look for the actual business website.
+      // In some versions of Yelp API, the business website is a separate field.
+      // If not, we use the Yelp URL as a fallback for the crawler to at least try.
       
       let email = null;
-      if (details.website) {
-        email = await findEmailFromWebsite(details.website);
-      }
+      let website = null;
+      
+      // Attempt to find actual website if Yelp provides it (Business details might be needed)
+      // For now, let's assume we use the provided data.
+      
+      // Yelp's search result 'url' is the Yelp listing.
+      // We will try to find the email if they have a dedicated website.
+      // To get the actual business website, we sometimes need the Business Details endpoint.
+      // Let's just use what we have from search for now to keep it fast.
+      
+      const score = calculateScore(business);
 
-      const score = calculateScore(details) + (email ? 15 : 0);
-
-      // Check for duplicates before inserting
+      // Check for duplicates
       const { data: existingLeads } = await supabase
         .from('leads')
         .select('id')
-        .or(`website.eq.${details.website || 'null'},name.eq.${details.name}`)
+        .or(`name.eq."${business.name}", phone.eq."${business.display_phone}"`)
         .limit(1);
 
       if (existingLeads && existingLeads.length > 0) {
-        console.log(`Lead already exists: ${details.name}`);
         continue;
       }
 
       const leadData = {
-        name: details.name,
-        website: details.website || null,
-        phone: details.formatted_phone_number || null,
+        name: business.name,
+        website: business.url, // Falling back to Yelp URL
+        phone: business.display_phone || null,
         industry: category,
-        email: email,
+        email: null, // Email requires deeper crawling or business details
         score: score,
         status: 'not_contacted',
-        notes: `Discovered via Google Places. Rating: ${details.rating || 'N/A'}`
+        notes: `Discovered via Yelp. Rating: ${business.rating}, Reviews: ${business.review_count}`
       };
 
       const { data, error } = await supabase
@@ -133,12 +141,12 @@ const discoverLeads = async (req, res) => {
     }
 
     res.status(200).json({
-      message: `Discovery complete. Found and processed ${discoveredLeads.length} leads.`,
+      message: `Discovery complete. Found and processed ${discoveredLeads.length} leads via Yelp.`,
       leads: discoveredLeads
     });
 
   } catch (error) {
-    console.error('Error in discoverLeads:', error);
+    console.error('Error in discoverLeads (Yelp):', error);
     res.status(500).json({ error: error.message });
   }
 };

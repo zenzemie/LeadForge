@@ -1,47 +1,50 @@
 const axios = require('axios');
 const cheerio = require('cheerio');
 
-const GOOGLE_PLACES_API_KEY = process.env.GOOGLE_PLACES_API_KEY;
+const YELP_API_KEY = process.env.YELP_API_KEY;
 
 /**
- * Search for businesses using Google Places Text Search
+ * Search for businesses using Yelp Fusion API
  */
-const searchPlaces = async (query) => {
+const searchBusinesses = async (term, location) => {
   try {
     const response = await axios.get(
-      `https://maps.googleapis.com/maps/api/place/textsearch/json`,
+      'https://api.yelp.com/v3/businesses/search',
       {
+        headers: {
+          Authorization: `Bearer ${YELP_API_KEY}`,
+        },
         params: {
-          query: query,
-          key: GOOGLE_PLACES_API_KEY,
+          term: term,
+          location: location,
+          limit: 10,
         },
       }
     );
-    return response.data.results;
+    return response.data.businesses;
   } catch (error) {
-    console.error('Error in searchPlaces:', error.message);
+    console.error('Error in searchBusinesses (Yelp):', error.response?.data || error.message);
     throw error;
   }
 };
 
 /**
- * Fetch detailed information for a specific place
+ * Yelp Search returns most details already, so this is mainly for consistency
+ * or if we need more specific details later.
  */
-const getPlaceDetails = async (placeId) => {
+const getBusinessDetails = async (businessId) => {
   try {
     const response = await axios.get(
-      `https://maps.googleapis.com/maps/api/place/details/json`,
+      `https://api.yelp.com/v3/businesses/${businessId}`,
       {
-        params: {
-          place_id: placeId,
-          fields: 'name,formatted_phone_number,website,rating,user_ratings_total,types,business_status',
-          key: GOOGLE_PLACES_API_KEY,
+        headers: {
+          Authorization: `Bearer ${YELP_API_KEY}`,
         },
       }
     );
-    return response.data.result;
+    return response.data;
   } catch (error) {
-    console.error('Error in getPlaceDetails:', error.message);
+    console.error('Error in getBusinessDetails (Yelp):', error.response?.data || error.message);
     throw error;
   }
 };
@@ -51,8 +54,15 @@ const getPlaceDetails = async (placeId) => {
  */
 const findEmailFromWebsite = async (url) => {
   if (!url) return null;
+  
+  // Basic URL validation/cleanup
+  let cleanUrl = url;
+  if (!url.startsWith('http')) {
+    cleanUrl = `https://${url}`;
+  }
+
   try {
-    const response = await axios.get(url, { 
+    const response = await axios.get(cleanUrl, { 
       timeout: 8000,
       headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
@@ -66,7 +76,7 @@ const findEmailFromWebsite = async (url) => {
     const matches = bodyText.match(emailRegex);
     
     if (matches && matches.length > 0) {
-      // Filter out common false positives if any, return the first one
+      // Return the first match (usually a contact email)
       return matches[0];
     }
     
@@ -84,26 +94,25 @@ const findEmailFromWebsite = async (url) => {
 };
 
 /**
- * Calculate lead score based on strategy
+ * Calculate lead score based on Yelp data
  */
 const calculateScore = (details) => {
   let score = 0;
   
-  // No Website (+30)
-  if (!details.website) {
+  // No Website (+30) - Yelp usually has this, but if missing, it's a huge lead
+  if (!details.url && !details.display_phone) {
+    score += 40;
+  } else if (!details.url) {
     score += 30;
-  } else {
-    // Has website but might need redesign (could add more complex checks here)
-    // For now, let's just assume if they have a website it's good, but if it's missing it's a huge opportunity.
   }
 
-  // No Chatbot/WhatsApp (+25) - Hard to detect via API, but we'll assume most don't have one if not specified
-  score += 25; 
+  // Low Review Count (+20) - Businesses with few reviews might need AI reply systems
+  if (details.review_count < 20) {
+    score += 20;
+  }
 
-  // Public Email Listed (+15) - Handled after crawling
-  
-  // High Review Volume (+10)
-  if (details.user_ratings_total > 100) {
+  // High Rating but low volume (+10)
+  if (details.rating >= 4 && details.review_count < 50) {
     score += 10;
   }
 
@@ -111,8 +120,8 @@ const calculateScore = (details) => {
 };
 
 module.exports = {
-  searchPlaces,
-  getPlaceDetails,
+  searchBusinesses,
+  getBusinessDetails,
   findEmailFromWebsite,
   calculateScore,
 };
