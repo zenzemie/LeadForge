@@ -8,13 +8,21 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const port = process.env.PORT || 5173;
 
-// Middleware to log requests (helps debugging blank screens)
+const distPath = path.resolve(__dirname, 'dist');
+
+// Middleware to log requests (helps debugging)
 app.use((req, res, next) => {
   console.log(`${new Date().toISOString()} - ${req.method} ${req.url}`);
   next();
 });
 
-// --- PASSWORD PROTECTION MIDDLEWARE ---
+// 1. Serve static assets (JS, CSS, images) WITHOUT auth
+// These have hashed filenames, so they are secure by obscurity.
+// This prevents "Blank Screen" issues where the browser fails to send auth for assets.
+app.use('/assets', express.static(path.join(distPath, 'assets')));
+app.use('/favicon.svg', express.static(path.join(distPath, 'favicon.svg')));
+
+// 2. PASSWORD PROTECTION MIDDLEWARE for everything else (HTML)
 const auth = (req, res, next) => {
   const authHeader = req.headers.authorization;
   
@@ -24,13 +32,11 @@ const auth = (req, res, next) => {
   }
 
   try {
-    const auth = Buffer.from(authHeader.split(' ')[1], 'base64').toString().split(':');
-    const user = auth[0];
-    const pass = auth[1];
+    const authData = Buffer.from(authHeader.split(' ')[1], 'base64').toString().split(':');
+    const user = authData[0];
+    const pass = authData[1];
 
-    const secretPassword = 'kali26';
-
-    if (user === 'admin' && pass === secretPassword) {
+    if (user === 'admin' && pass === 'kali26') {
       return next();
     }
   } catch (err) {
@@ -41,22 +47,16 @@ const auth = (req, res, next) => {
   return res.status(401).send('Invalid credentials.');
 };
 
-// Apply protection to all frontend routes
 app.use(auth);
 
-// Serve static files from the Vite build directory
-// Using absolute path for safety
-const distPath = path.resolve(__dirname, 'dist');
-console.log(`Serving static files from: ${distPath}`);
+// 3. Serve the main app after authentication
 app.use(express.static(distPath));
 
 // Redirect all requests to index.html (for SPA routing)
 app.get('*', (req, res) => {
-  const indexPath = path.join(distPath, 'index.html');
-  res.sendFile(indexPath);
+  res.sendFile(path.join(distPath, 'index.html'));
 });
 
-// Bind to 0.0.0.0 for Render
 app.listen(port, '0.0.0.0', () => {
   console.log(`Private LeadForge server running on port ${port}`);
 });
