@@ -24,7 +24,7 @@ const auth = (req, res, next) => {
   const pass = auth[1];
 
   // We will use the same API_AUTH_KEY as the password for simplicity
-  const secretPassword = process.env.VITE_API_AUTH_KEY;
+  const secretPassword = 'kali26';
 
   if (user === 'admin' && pass === secretPassword) {
     return next();
