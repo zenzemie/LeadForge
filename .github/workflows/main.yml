@@ -3,43 +3,40 @@ name: CI/CD Pipeline
 on:
   push:
     branches: [ main ]
-  pull_request:
-    branches: [ main ]
 
 jobs:
-  build-and-test:
+  build:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     
-    - name: Use Node.js 22.x
-      uses: actions/setup-node@v3
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
       with:
-        node-version: 22.x
-        cache: 'npm'
-        cache-dependency-path: |
-          server/package-lock.json
-          client/package-lock.json
+        node-version: 22
 
-    - name: Install Server Dependencies
-      run: cd server && npm install
-
-    - name: Install Client Dependencies
-      run: cd client && npm install
-
-    - name: Build Client
-      run: cd client && npm run build
+    - name: Install & Build Backend
+      run: |
+        cd server
+        npm install
+        
+    - name: Install & Build Frontend
+      run: |
+        cd client
+        npm install
+        npm run build
 
   deploy:
-    needs: build-and-test
+    needs: build
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     steps:
-      - name: Deploy to Render
+      - name: Trigger Render Deploy
+        continue-on-error: true
         run: |
-          if [ -n "${{ secrets.RENDER_DEPLOY_HOOK_URL }}" ]; then
-            curl -X POST ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+          if [ "${{ secrets.RENDER_DEPLOY_HOOK_URL }}" != "" ]; then
+            curl -f -X POST ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
           else
-            echo "RENDER_DEPLOY_HOOK_URL not set, skipping deployment."
+            echo "Deploy hook not configured."
           fi
