@@ -12,12 +12,8 @@ const validateRequest = (schema) => {
 
 const schemas = {
   discover: Joi.object({
-    category: Joi.string().required().valid(
-      'restaurant', 'salon', 'clinic', 'hotel', 'gym', 
-      'accountant', 'lawyer', 'plumber', 'electrician', 
-      'physiotherapist', 'chiropractor'
-    ),
-    location: Joi.string().required().min(3).max(100)
+    category: Joi.string().required().min(2).max(50),
+    location: Joi.string().required().min(2).max(100)
   }),
   sendEmail: Joi.object({
     leadId: Joi.string().uuid().required(),
