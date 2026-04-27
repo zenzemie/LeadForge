@@ -26,7 +26,7 @@ services:
       - key: YELP_API_KEY
         value: EpRkWXEfkQfNzEF_vTZAsth3lBiWllm9kNeloWZADk5lSME0j3zlSnivLGh2Dr3ex59cDX6divgEXNFcZwmCFgRuDuDlC43wMt4pQ0rss2kY_jDT6-WhmxFM3V3uaXYx
       - key: API_AUTH_KEY
-        generateValue: true
+        value: leadforge_secret_99
 
   # Frontend Dashboard
   - type: web

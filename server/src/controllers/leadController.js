@@ -108,11 +108,11 @@ const discoverLeads = async (req, res) => {
       
       const score = calculateScore(business);
 
-      // Check for duplicates
+      // Check for duplicates - using a safer approach
       const { data: existingLeads } = await supabase
         .from('leads')
         .select('id')
-        .or(`name.eq."${business.name}", phone.eq."${business.display_phone}"`)
+        .eq('name', business.name)
         .limit(1);
 
       if (existingLeads && existingLeads.length > 0) {
