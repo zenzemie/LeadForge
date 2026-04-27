@@ -26,7 +26,8 @@ const Discovery = () => {
       setResults(response.data.leads || []);
     } catch (err) {
       console.error(err);
-      setError('Connection Error: Make sure your API keys are set in Render.');
+      const msg = err.response?.data?.error || err.message || 'Unknown connection error';
+      setError(`API Error: ${msg}. Check Render logs and API keys.`);
     } finally {
       setLoading(false);
     }
